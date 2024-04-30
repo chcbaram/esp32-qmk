@@ -1,0 +1,17 @@
+{
+    "C_Cpp.autoAddFileAssociations": false,
+  
+    "terminal.integrated.defaultProfile.windows": "PowerShell",
+    "terminal.integrated.profiles.windows": {
+      "PowerShell": {
+        "source": "PowerShell",
+        "icon": "terminal-powershell",
+        "env": {
+          "IDF_PATH":"${env:IDF_PATH_V5_1}",
+          "IDF_TOOLS_PATH":"${env:IDF_TOOLS_PATH_V5_1}"
+        },
+        "args": ["-noexit", "-executionpolicy", "bypass", "-File", "${env:IDF_PATH_V5_1}/export.ps1"
+      ]
+      },
+    }
+  }
