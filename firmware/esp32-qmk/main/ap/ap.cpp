@@ -17,13 +17,13 @@ const uint8_t hid_report_descriptor[] = {
   TUD_HID_REPORT_DESC_MOUSE(HID_REPORT_ID(HID_ITF_PROTOCOL_MOUSE))};
 
 
-const char *hid_string_descriptor[5] = {
-  // array of pointer to string descriptors
-  (char[]){0x09, 0x04}, // 0: is supported language is English (0x0409)
-  "TinyUSB", // 1: Manufacturer
-  "TinyUSB Device", // 2: Product
-  "123456", // 3: Serials, should use chip ID
-  "Example HID interface", // 4: HID
+const char *hid_string_descriptor[5] =
+{
+  (char[]){0x09, 0x04},     // 0: is supported language is English (0x0409)
+  "BARAM",                  // 1: Manufacturer
+  "BARAM-45K-ESP32",        // 2: Product
+  "123456",                 // 3: Serials, should use chip ID
+  "HID Keyboard",           // 4: HID
 };
 
 static const uint8_t hid_configuration_descriptor[] = {
@@ -36,8 +36,8 @@ static const uint8_t hid_configuration_descriptor[] = {
 
 uint8_t const *tud_hid_descriptor_report_cb(uint8_t instance)
 {
-    // We use only one interface and one HID report descriptor, so we can ignore parameter 'instance'
-    return hid_report_descriptor;
+  // We use only one interface and one HID report descriptor, so we can ignore parameter 'instance'
+  return hid_report_descriptor;
 }
 
 uint16_t tud_hid_get_report_cb(uint8_t instance, uint8_t report_id, hid_report_type_t report_type, uint8_t* buffer, uint16_t reqlen)
@@ -57,7 +57,7 @@ void tud_hid_set_report_cb(uint8_t instance, uint8_t report_id, hid_report_type_
 
 
 static void cliThread(void *args);
-
+static void cliHid(cli_args_t *args);
 
 
 
@@ -73,6 +73,8 @@ void apInit(void)
 
   delay(500);
   logBoot(false);
+
+  cliAdd("hid", cliHid);
 }
 
 
@@ -80,11 +82,12 @@ void apMain(void)
 {
   uint32_t pre_time;
   uint8_t index = 0;
+  bool is_mounted = false;
 
 
   const tinyusb_config_t tusb_cfg = {
-    .device_descriptor        = NULL,                  
-    .string_descriptor        = hid_string_descriptor, 
+    .device_descriptor        = NULL,
+    .string_descriptor        = hid_string_descriptor,
     .string_descriptor_count  = sizeof(hid_string_descriptor) / sizeof(hid_string_descriptor[0]),
     .external_phy             = false,
     .configuration_descriptor = hid_configuration_descriptor,
@@ -105,9 +108,14 @@ void apMain(void)
     }
     delay(1);
 
-    if (tud_mounted())
+    if (is_mounted != tud_mounted())
     {
-      logPrintf("mounted\n");
+      if (!is_mounted)
+        logPrintf("mounted\n");
+      else
+        logPrintf("not mounted\n");
+
+      is_mounted = tud_mounted();
     }
   }
 }
@@ -117,6 +125,24 @@ void cliThread(void *args)
   while(1)
   {
     cliMain();
-    delay(2)
+    delay(2);
+  }
+}
+
+void cliHid(cli_args_t *args)
+{
+  bool ret = false;
+
+  if (args->argc == 1 && args->isStr(0, "info"))
+  {
+    cliPrintf("mounted   : %d\n", tud_mounted());
+    cliPrintf("connedted : %d\n", tud_connected());
+    cliPrintf("tud_suspended : %d\n", tud_suspended());
+    ret = true;
+  }
+
+  if (!ret)
+  {
+    cliPrintf("hid info\n");
   }
 }

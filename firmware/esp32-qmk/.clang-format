@@ -47,8 +47,7 @@ AlignConsecutiveShortCaseStatements:
 
 AlignEscapedNewlines: Left
 
-BreakBeforeBinaryOperators: true
-AlignOperands: AlignAfterOperator
+AlignOperands: Align
 
 AlignTrailingComments:
   Kind: Always
@@ -62,8 +61,6 @@ KeepEmptyLinesAtTheStartOfBlocks: false
 
 SeparateDefinitionBlocks: Always
 
-ContinuationIndentWidth: 2
+ContinuationIndentWidth: 0
 
 MaxEmptyLinesToKeep: 2
-
-
