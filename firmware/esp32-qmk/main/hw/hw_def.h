@@ -19,6 +19,8 @@
 
 #define _USE_HW_RTOS
 #define _USE_HW_NVS
+#define _USE_HW_USB
+#define _USE_HW_EEPROM
 
 
 #define _USE_HW_UART
@@ -39,6 +41,16 @@
 #define      HW_LOG_CH              _DEF_UART1
 #define      HW_LOG_BOOT_BUF_MAX    1024
 #define      HW_LOG_LIST_BUF_MAX    1024
+
+#define _USE_HW_I2C
+#define      HW_I2C_MAX_CH          1
+
+
+
+//-- CLI
+//
+#define _USE_CLI_HW_EEPROM          1
+#define _USE_CLI_HW_I2C             1
 
 
 #endif 

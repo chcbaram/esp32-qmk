@@ -64,6 +64,7 @@ typedef struct
   uint32_t baud;
   bool     is_open;
   bool     is_log;
+  bool     is_busy;
   uint8_t  log_ch;
   uint32_t log_baud;
   uint8_t  state;
@@ -114,6 +115,7 @@ bool cliInit(void)
 {
   cli_node.is_open = false;
   cli_node.is_log  = false;
+  cli_node.is_busy = false;
   cli_node.state   = CLI_RX_IDLE;
 
   cli_node.hist_line_i     = 0;
@@ -142,11 +144,19 @@ bool cliOpen(uint8_t ch, uint32_t baud)
 
   if (cli_node.is_open == false || cli_node.baud != baud)
   {
-    cli_node.baud = baud;
-    cli_node.is_open = uartOpen(ch, baud);
+    if (baud > 0)
+    {
+      cli_node.baud = baud;
+      cli_node.is_open = uartOpen(ch, baud);
+    }
   }
 
   return cli_node.is_open;
+}
+
+bool cliIsBusy(void)
+{
+  return cli_node.is_busy;
 }
 
 bool cliOpenLog(uint8_t ch, uint32_t baud)
@@ -198,7 +208,7 @@ void cliShowLog(cli_t *p_cli)
 
 void cliShowPrompt(cli_t *p_cli)
 {
-  uartPrintf(p_cli->ch, "\r\n");
+  uartPrintf(p_cli->ch, "\n\r");
   uartPrintf(p_cli->ch, CLI_PROMPT_STR);
 }
 
@@ -248,19 +258,16 @@ bool cliUpdate(cli_t *p_cli, uint8_t rx_data)
       // 엔터
       //
       case CLI_KEY_ENTER:
-      case 0x0A:
         if (line->count > 0)
         {
           cliLineAdd(p_cli);
-          if (cliRunCmd(p_cli) != true)
-          {
-            uartPrintf(p_cli->ch, "no cmd       ");
-          }
+          cliRunCmd(p_cli);
         }
-        line->count  = 0;
+
+        line->count = 0;
         line->cursor = 0;
         line->buf[0] = 0;
-        cliShowPrompt(p_cli);        
+        cliShowPrompt(p_cli);
         break;
 
 
@@ -523,6 +530,7 @@ bool cliRunCmd(cli_t *p_cli)
 
     cliToUpper(p_cli->argv[0]);
 
+    p_cli->is_busy = true;
     for (int i=0; i<p_cli->cmd_count; i++)
     {
       if (strcmp(p_cli->argv[0], p_cli->cmd_list[i].cmd_str) == 0)
@@ -530,10 +538,10 @@ bool cliRunCmd(cli_t *p_cli)
         p_cli->cmd_args.argc =  p_cli->argc - 1;
         p_cli->cmd_args.argv = &p_cli->argv[1];
         p_cli->cmd_list[i].cmd_func(&p_cli->cmd_args);
-        ret = true;
         break;
       }
     }
+    p_cli->is_busy = false;
   }
 
   return ret;
@@ -814,6 +822,28 @@ void cliMemoryDump(cli_args_t *args)
     }
     addr++;
   }
+}
+
+void cliShowCursor(bool visibility)
+{
+  if (visibility == false)
+  {
+    cliPrintf("\033[?25l");
+  }
+  else
+  {
+    cliPrintf("\033[?25h");
+  }
+}
+
+void cliMoveUp(uint8_t y)
+{
+  cliPrintf("\x1B[%dA", y);
+}
+
+void cliMoveDown(uint8_t y)
+{
+  cliPrintf("\x1B[%dB", y);
 }
 
 #endif

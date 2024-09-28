@@ -12,8 +12,9 @@ extern "C" {
 #include "cli.h"
 #include "log.h"
 #include "nvs.h"
-
-
+#include "driver/usb/usb.h"
+#include "i2c.h"
+#include "eeprom.h"
 
 bool hwInit(void);
 

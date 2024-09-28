@@ -20,6 +20,7 @@ set(requires
   "nvs_flash"
   "esp_hid"
   "esp_mm"
+  "tinyusb"
 )
 
 idf_component_register(
@@ -43,4 +44,7 @@ idf_component_register(
   REQUIRES driver
   )
 
-  target_compile_options(${COMPONENT_LIB} PRIVATE "-Wno-format")
+  target_compile_options(${COMPONENT_LIB} PRIVATE 
+  "-Wno-format"
+  "-Wno-expansion-to-defined"
+  )
