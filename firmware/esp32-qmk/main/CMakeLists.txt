@@ -1,12 +1,13 @@
 
 
+
 file(GLOB SRC_FILES 
-  bsp/*.c
+  ap/*.c
+  ap/*.cpp
 )
 
 file(GLOB_RECURSE SRC_FILES_RECURSE
-  ap/*.c
-  ap/*.cpp
+  bsp/*.c
   common/*.c 
   hw/*.c
   hw/*.cpp;
@@ -28,15 +29,20 @@ idf_component_register(
   
   SRCS ${SRC_FILES}
   SRCS ${SRC_FILES_RECURSE}
-  
+  SRCS ${QMK_SRC_FILES}
+
   INCLUDE_DIRS ""
   INCLUDE_DIRS "ap"
+  INCLUDE_DIRS "ap/modules"
   INCLUDE_DIRS "bsp"
   INCLUDE_DIRS "common"
   INCLUDE_DIRS "common/core"
   INCLUDE_DIRS "common/hw/include"
   INCLUDE_DIRS "hw"
+  INCLUDE_DIRS "hw/driver/usb"
   INCLUDE_DIRS "lib" 
+
+  INCLUDE_DIRS ${QMK_INC_DIR}
 
   PRIV_REQUIRES soc driver freertos
 

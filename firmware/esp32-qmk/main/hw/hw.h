@@ -15,6 +15,10 @@ extern "C" {
 #include "driver/usb/usb.h"
 #include "i2c.h"
 #include "eeprom.h"
+#include "reset.h"
+#include "qbuffer.h"
+#include "keys.h"
+
 
 bool hwInit(void);
 

@@ -14,6 +14,9 @@ extern "C" {
 #ifdef _USE_HW_USB
 
 
+#include "usb_hid/usbd_hid.h"
+
+
 
 bool usbInit(void);
 bool usbIsOpen(void);

@@ -4,23 +4,25 @@
 
 #include "def.h"
 #include "bsp.h"
-
+#include QMK_KEYMAP_CONFIG_H
 
 
 #define _DEF_FIRMWATRE_VERSION    "V240430R1"
 #define _DEF_BOARD_NAME           "ESP32-QMK"
 
 
-
 #define _HW_DEF_RTOS_THREAD_PRI_CLI           5
+#define _HW_DEF_RTOS_THREAD_PRI_QMK           5
 
 #define _HW_DEF_RTOS_THREAD_MEM_CLI           (8*1024)
+#define _HW_DEF_RTOS_THREAD_MEM_QMK           (8*1024)
 
 
 #define _USE_HW_RTOS
 #define _USE_HW_NVS
 #define _USE_HW_USB
 #define _USE_HW_EEPROM
+#define _USE_HW_RESET
 
 
 #define _USE_HW_UART
@@ -45,12 +47,18 @@
 #define _USE_HW_I2C
 #define      HW_I2C_MAX_CH          1
 
+#define _USE_HW_KEYS
+#define      HW_KEYS_PRESS_MAX      6
 
 
 //-- CLI
 //
 #define _USE_CLI_HW_EEPROM          1
 #define _USE_CLI_HW_I2C             1
+#define _USE_CLI_HW_KEYS            1
+
+
+#define __WEAK                      __attribute__((weak))
 
 
 #endif 

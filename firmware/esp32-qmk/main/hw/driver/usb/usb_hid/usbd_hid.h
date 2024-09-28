@@ -8,6 +8,21 @@ extern "C" {
 
 #include "hw_def.h"
 
+
+#define HID_EP_SIZE                                     64U
+
+#define HID_EPIN_ADDR                                   0x81U
+#define HID_EPIN_SIZE                                   64U
+
+#define HID_VIA_EP_IN                                   0x84U
+#define HID_VIA_EP_OUT                                  0x04U
+#define HID_VIA_EP_SIZE                                 32U
+
+
+#define HID_KEYBOARD_VIA_REPORT_DESC_SIZE               34U
+#define HID_KEYBOARD_REPORT_DESC_SIZE                   64U
+
+
 enum 
 {
   USB_HID_LED_NUM_LOCK    = (1 << 0),

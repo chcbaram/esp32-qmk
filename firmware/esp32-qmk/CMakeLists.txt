@@ -3,4 +3,12 @@
 cmake_minimum_required(VERSION 3.16)
 
 include($ENV{IDF_PATH}/tools/cmake/project.cmake)
+
+
+set(KEYBOARD_PATH "/keyboards/baram/45k")
+
+include(main/ap/modules/qmk/CMakeLists.txt)
+
 project(esp32-qmk)
+
+

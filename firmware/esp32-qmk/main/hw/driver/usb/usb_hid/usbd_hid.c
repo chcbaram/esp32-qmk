@@ -18,8 +18,22 @@
 #include "class/hid/hid_device.h"
 
 
+enum
+{
+  ITF_ID_KEYBOARD = 0,
+  ITF_ID_VIA,
+  ITF_ID_COUNT
+};
 
-#define TUSB_DESC_TOTAL_LEN      (TUD_CONFIG_DESC_LEN + CFG_TUD_HID * TUD_HID_DESC_LEN)
+enum
+{
+  REPORT_ID_KEYBOARD = 1,
+  REPORT_ID_MOUSE,
+  REPORT_ID_COUNT
+};
+
+
+#define TUSB_DESC_TOTAL_LEN      (TUD_CONFIG_DESC_LEN + TUD_HID_DESC_LEN + TUD_HID_INOUT_DESC_LEN)
 
 
 //--------------------------------------------------------------------+
@@ -27,34 +41,57 @@
 //--------------------------------------------------------------------+
 tusb_desc_device_t const desc_device =
 {
-    .bLength            = sizeof(tusb_desc_device_t),
-    .bDescriptorType    = TUSB_DESC_DEVICE,
-    .bcdUSB             = 0x0200,
+  .bLength            = sizeof(tusb_desc_device_t),
+  .bDescriptorType    = TUSB_DESC_DEVICE,
+  .bcdUSB             = 0x0200,
 
-    // Use Interface Association Descriptor (IAD) for Audio
-    // As required by USB Specs IAD's subclass must be common class (2) and protocol must be IAD (1)
-    .bDeviceClass       = 0x00,
-    .bDeviceSubClass    = 0x00,
-    .bDeviceProtocol    = 0x00,
-    .bMaxPacketSize0    = CFG_TUD_ENDPOINT0_SIZE,
+  .bDeviceClass       = 0x00,
+  .bDeviceSubClass    = 0x00,
+  .bDeviceProtocol    = 0x00,
+  .bMaxPacketSize0    = CFG_TUD_ENDPOINT0_SIZE,
 
-    .idVendor           = USB_VID,
-    .idProduct          = USB_PID,
-    .bcdDevice          = 0x0200,
+  .idVendor           = USB_VID,
+  .idProduct          = USB_PID,
+  .bcdDevice          = 0x0100,
 
-    .iManufacturer      = 0x01,
-    .iProduct           = 0x02,
-    .iSerialNumber      = 0x03,
+  .iManufacturer      = 0x01,
+  .iProduct           = 0x02,
+  .iSerialNumber      = 0x03,
 
-    .bNumConfigurations = 0x01
+  .bNumConfigurations = 0x01
 };
 
 //--------------------------------------------------------------------+
 // HID Report Descriptor
 //--------------------------------------------------------------------+
-const uint8_t hid_report_descriptor[] ={
-  TUD_HID_REPORT_DESC_KEYBOARD(HID_REPORT_ID(HID_ITF_PROTOCOL_KEYBOARD)),
-  TUD_HID_REPORT_DESC_MOUSE(HID_REPORT_ID(HID_ITF_PROTOCOL_MOUSE))};
+const uint8_t hid_keyboard_descriptor[] =
+{
+  TUD_HID_REPORT_DESC_KEYBOARD(HID_REPORT_ID(REPORT_ID_KEYBOARD)),
+  TUD_HID_REPORT_DESC_MOUSE(HID_REPORT_ID(REPORT_ID_MOUSE)),
+};
+
+const uint8_t hid_via_descriptor[HID_KEYBOARD_VIA_REPORT_DESC_SIZE] = 
+{
+  //
+  0x06, 0x60, 0xFF, // Usage Page (Vendor Defined)
+  0x09, 0x61,       // Usage (Vendor Defined)
+  0xA1, 0x01,       // Collection (Application)
+  // Data to host
+  0x09, 0x62,       //   Usage (Vendor Defined)
+  0x15, 0x00,       //   Logical Minimum (0)
+  0x26, 0xFF, 0x00, //   Logical Maximum (255)
+  0x95, 32,         //   Report Count
+  0x75, 0x08,       //   Report Size (8)
+  0x81, 0x02,       //   Input (Data, Variable, Absolute)
+  // Data from host
+  0x09, 0x63,       //   Usage (Vendor Defined)
+  0x15, 0x00,       //   Logical Minimum (0)
+  0x26, 0xFF, 0x00, //   Logical Maximum (255)
+  0x95, 32,         //   Report Count
+  0x75, 0x08,       //   Report Size (8)
+  0x91, 0x02,       //   Output (Data, Variable, Absolute)
+  0xC0              // End Collection
+};
 
 
 const char *hid_string_descriptor[5] =
@@ -67,12 +104,41 @@ const char *hid_string_descriptor[5] =
 };
 
 static const uint8_t hid_configuration_descriptor[] = {
-  // Configuration number, interface count, string index, total length,        attribute,                   power in mA
-  TUD_CONFIG_DESCRIPTOR(1, 1,               0,            TUSB_DESC_TOTAL_LEN, TUSB_DESC_CONFIG_ATT_REMOTE_WAKEUP, 500),
 
-  // Interface number,  string index, boot protocol, report descriptor len,         EP In address, size & polling inerval
-  TUD_HID_DESCRIPTOR(0, 4,            true,          sizeof(hid_report_descriptor), 0x81,          16,    1),
+  TUD_CONFIG_DESCRIPTOR(1,  // Configuration number,
+                        2,  // interface count
+                        0,  // string index
+                        TUSB_DESC_TOTAL_LEN,                // total length
+                        TUSB_DESC_CONFIG_ATT_REMOTE_WAKEUP, // attribute
+                        500                                 // power in mA
+                        ),
+
+  TUD_HID_DESCRIPTOR(0,                                     // Interface number
+                     0,                                     // string index
+                     HID_ITF_PROTOCOL_KEYBOARD,             // boot protocol
+                     sizeof(hid_keyboard_descriptor),       // report descriptor len
+                     HID_EPIN_ADDR,                         // EP In address
+                     HID_EPIN_SIZE,                         // size
+                     1                                      // polling inerval
+                     ),
+
+  TUD_HID_INOUT_DESCRIPTOR(1,                               // Interface number
+                           0,                               // string index
+                           HID_ITF_PROTOCOL_NONE,           // protocol
+                           sizeof(hid_via_descriptor),      // report descriptor len
+                           HID_VIA_EP_OUT,                  // EP Out Address
+                           HID_VIA_EP_IN,                   // EP In Address
+                           64,                 // size
+                           10                               // polling interval
+                           ),
 };
+
+
+static void (*via_hid_receive_func)(uint8_t *data, uint8_t length) = NULL;
+static uint8_t via_hid_usb_report[32];
+
+
+
 
 
 
@@ -92,26 +158,146 @@ bool usbHidInit(void)
   return true;
 }
 
-uint8_t const *tud_hid_descriptor_report_cb(uint8_t instance)
+uint8_t const *tud_hid_descriptor_report_cb(uint8_t itf)
 {
-  // We use only one interface and one HID report descriptor, so we can ignore parameter 'instance'
-  return hid_report_descriptor;
+  uint8_t const *p_ret;
+
+  logPrintf("tud_hid_descriptor_report_cb(%d)\n", itf);
+
+  switch(itf)
+  {
+    case ITF_ID_VIA:
+      p_ret = hid_via_descriptor;
+      break;
+
+    default:
+      p_ret = hid_keyboard_descriptor;
+      break;
+  }
+  
+  return p_ret;
 }
 
-uint16_t tud_hid_get_report_cb(uint8_t instance, uint8_t report_id, hid_report_type_t report_type, uint8_t *buffer, uint16_t reqlen)
+uint16_t tud_hid_get_report_cb(uint8_t itf, uint8_t report_id, hid_report_type_t report_type, uint8_t *buffer, uint16_t reqlen)
 {
-  (void)instance;
+  (void)itf;
   (void)report_id;
   (void)report_type;
   (void)buffer;
   (void)reqlen;
 
   logPrintf("tud_hid_get_report_cb()\n");
+  logPrintf("  itf         : %d\n", itf);
+  logPrintf("  report_id   : %d\n", report_id);
+  logPrintf("  report_type : %d\n", (int)report_type);
+  logPrintf("  reqlen      : %d\n", (int)reqlen);
+
   return 0;
 }
 
-void tud_hid_set_report_cb(uint8_t instance, uint8_t report_id, hid_report_type_t report_type, uint8_t const *buffer, uint16_t bufsize)
+void tud_hid_set_report_cb(uint8_t itf, uint8_t report_id, hid_report_type_t report_type, uint8_t const *buffer, uint16_t bufsize)
 {
+  (void) itf;
+  (void) report_id;
+  (void) report_type;
+
+  logPrintf("tud_hid_set_report_cb()\n");
+  logPrintf("  itf         : %d\n", itf);
+  logPrintf("  report_id   : %d\n", report_id);
+  logPrintf("  report_type : %d\n", (int)report_type);
+  logPrintf("  reqlen      : %d\n", (int)bufsize);
+
+  switch(itf)
+  {
+    case ITF_ID_KEYBOARD:
+      break;
+
+    case ITF_ID_VIA:
+      memcpy(via_hid_usb_report, buffer, HID_VIA_EP_SIZE);
+      if (via_hid_receive_func != NULL)
+      {
+        via_hid_receive_func(via_hid_usb_report, HID_VIA_EP_SIZE);
+      }
+      tud_hid_n_report(itf, report_id, via_hid_usb_report, HID_VIA_EP_SIZE);
+      break;
+  }
+}
+
+// Invoked when sent REPORT successfully to host
+// Application can use this to send the next report
+// Note: For composite reports, report[0] is report ID
+void tud_hid_report_complete_cb(uint8_t itf, uint8_t const* report, uint16_t len)
+{
+  (void) itf;
+  (void) report;
+  (void) len;
+
+  // logPrintf("tud_hid_report_complete_cb()\n");
+  // logPrintf("  itf         : %d\n", itf);
+  // logPrintf("  len         : %d\n", (int)len);
+}
+
+bool usbHidSetViaReceiveFunc(void (*func)(uint8_t *, uint8_t))
+{
+  via_hid_receive_func = func;
+  return true;
+}
+
+bool usbHidSendReport(uint8_t *p_data, uint16_t length)
+{
+  // report_info_t report_info;
+
+  // if (length > HID_KEYBOARD_REPORT_SIZE)
+  //   return false;
+
+  // if (!USBD_is_suspended())
+  // {
+  //   key_time_pre = micros();
+
+  //   memcpy(hid_buf, p_data, length);
+  //   if (USBD_HID_SendReport((uint8_t *)hid_buf, HID_KEYBOARD_REPORT_SIZE))
+  //   {
+  //     key_time_req = true;
+  //     rate_time_req = true;
+  //     rate_time_pre = micros();    
+  //   }  
+  //   else
+  //   {
+  //     memcpy(report_info.buf, p_data, length);
+  //     qbufferWrite(&report_q, (uint8_t *)&report_info, 1);        
+  //   }    
+  // }
+  // else
+  // {
+  //   usbHidUpdateWakeUp(&USBD_Device);
+  // }
+  
+  return true;
+}
+
+bool usbHidSendReportEXK(uint8_t *p_data, uint16_t length)
+{
+  // exk_report_info_t report_info;
+
+  // if (length > HID_EXK_EP_SIZE)
+  //   return false;
+
+  // if (!USBD_is_suspended())
+  // {
+  //   memcpy(hid_buf_exk, p_data, length);
+  //   if (!USBD_HID_SendReportEXK((uint8_t *)hid_buf_exk, length))
+  //   {
+  //     report_info.len = length;
+  //     memcpy(report_info.buf, p_data, length);
+  //     qbufferWrite(&report_exk_q, (uint8_t *)&report_info, 1);        
+  //   }    
+  // }
+  // else
+  // {
+  //   usbHidUpdateWakeUp(&USBD_Device);
+  // }
+  
+  return true;
 }
 
 #ifdef _USE_HW_CLI
