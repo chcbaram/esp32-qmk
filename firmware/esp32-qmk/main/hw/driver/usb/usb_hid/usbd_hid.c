@@ -128,7 +128,7 @@ static const uint8_t hid_configuration_descriptor[] = {
                            sizeof(hid_via_descriptor),      // report descriptor len
                            HID_VIA_EP_OUT,                  // EP Out Address
                            HID_VIA_EP_IN,                   // EP In Address
-                           64,                 // size
+                           64,                              // size
                            10                               // polling interval
                            ),
 };
