@@ -286,6 +286,7 @@ bool usbHidSendReport(uint8_t *p_data, uint16_t length)
   }
   else
   {
+    tud_remote_wakeup();
     ret = false;
   }
 

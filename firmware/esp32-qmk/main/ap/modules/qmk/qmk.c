@@ -87,9 +87,11 @@ void idle_task(void)
     if (is_suspended_cur)
     {
       suspend_power_down();
+      logPrintf("Enter Suspend\n");
     }
     else
     {
+      logPrintf("Exit Suspend\n");
       suspend_wakeup_init();
     }
 
