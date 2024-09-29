@@ -14,10 +14,12 @@
 #define _HW_DEF_RTOS_THREAD_PRI_CLI           5
 #define _HW_DEF_RTOS_THREAD_PRI_QMK           5
 #define _HW_DEF_RTOS_THREAD_PRI_KEYS          5
+#define _HW_DEF_RTOS_THREAD_PRI_HID           5
 
 #define _HW_DEF_RTOS_THREAD_MEM_CLI           (8*1024)
 #define _HW_DEF_RTOS_THREAD_MEM_QMK           (8*1024)
 #define _HW_DEF_RTOS_THREAD_MEM_KEYS          (4*1024)
+#define _HW_DEF_RTOS_THREAD_MEM_HID           (2*1024)
 
 
 #define _USE_HW_RTOS

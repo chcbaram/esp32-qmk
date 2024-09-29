@@ -45,6 +45,12 @@ enum
 
 
 #define TUSB_DESC_TOTAL_LEN      (TUD_CONFIG_DESC_LEN + TUD_HID_DESC_LEN + TUD_HID_INOUT_DESC_LEN)
+#define HID_KEYBOARD_REPORT_SIZE (HW_KEYS_PRESS_MAX + 2U)
+
+typedef struct
+{
+  uint8_t  buf[HID_KEYBOARD_REPORT_SIZE];
+} report_info_t;
 
 
 //--------------------------------------------------------------------+
@@ -148,7 +154,12 @@ static const uint8_t hid_configuration_descriptor[] = {
 static void (*via_hid_receive_func)(uint8_t *data, uint8_t length) = NULL;
 static uint8_t via_hid_usb_report[32];
 
+static qbuffer_t     report_q;
+static report_info_t report_buf[128];
 
+
+
+static void hidThread(void *args);
 
 
 
@@ -165,7 +176,15 @@ bool usbHidInit(void)
     .vbus_monitor_io          = -1,
   };
 
+  qbufferCreateBySize(&report_q, (uint8_t *)report_buf, sizeof(report_info_t), 128); 
+
   tinyusb_driver_install(&tusb_cfg);
+
+
+  if (xTaskCreate(hidThread, "hidThread", _HW_DEF_RTOS_THREAD_MEM_HID, NULL, _HW_DEF_RTOS_THREAD_PRI_HID, NULL) != pdPASS)
+  {
+    logPrintf("[NG] hidThread()\n");   
+  }    
   return true;
 }
 
@@ -245,8 +264,8 @@ void tud_hid_report_complete_cb(uint8_t itf, uint8_t const* report, uint16_t len
 
   // logPrintf("tud_hid_report_complete_cb()\n");
   // logPrintf("  itf         : %d\n", itf);
-  // logPrintf("  len         : %d\n", (int)len);
-}
+  // logPrintf("  len         : %d\n", (int)len);                              
+}                              
 
 bool usbHidSetViaReceiveFunc(void (*func)(uint8_t *, uint8_t))
 {
@@ -260,18 +279,10 @@ bool usbHidSendReport(uint8_t *p_data, uint16_t length)
 
   if (!tud_suspended())
   {
-    if (tud_hid_n_ready(ITF_ID_KEYBOARD))
-    {
-      ret = tud_hid_n_report(ITF_ID_KEYBOARD, REPORT_ID_KEYBOARD, p_data, length);
-      if (!ret)
-      {
-        logPrintf("usbHidSendReport() Fail\n");
-      }
-    }
-    else
-    {
-      logPrintf("usbHidSendReport() Busy\n");
-    }
+    report_info_t report_info;
+
+    memcpy(report_info.buf, p_data, HID_KEYBOARD_REPORT_SIZE);
+    qbufferWrite(&report_q, (uint8_t *)&report_info, 1);   
   }
 
   return true;
@@ -300,6 +311,30 @@ bool usbHidSendReportEXK(uint8_t *p_data, uint16_t length)
   // }
   
   return true;
+}
+
+void hidThread(void *args)
+{
+  bool ret;
+  report_info_t report_info;
+
+
+  while(1)
+  {
+    if (tud_hid_n_ready(ITF_ID_KEYBOARD))
+    {
+      if (qbufferAvailable(&report_q) > 0)
+      {
+        qbufferRead(&report_q, (uint8_t *)&report_info, 1);
+        ret = tud_hid_n_report(ITF_ID_KEYBOARD, REPORT_ID_KEYBOARD, report_info.buf, sizeof(report_info.buf));
+        if (!ret)
+        {
+          logPrintf("usbHidSendReport() Fail\n");
+        }
+      }
+    }
+    delay(1);
+  }
 }
 
 #ifdef _USE_HW_CLI
