@@ -284,8 +284,12 @@ bool usbHidSendReport(uint8_t *p_data, uint16_t length)
     memcpy(report_info.buf, p_data, HID_KEYBOARD_REPORT_SIZE);
     qbufferWrite(&report_q, (uint8_t *)&report_info, 1);   
   }
+  else
+  {
+    ret = false;
+  }
 
-  return true;
+  return ret;
 }
 
 bool usbHidSendReportEXK(uint8_t *p_data, uint16_t length)

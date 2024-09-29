@@ -29,7 +29,6 @@ bool eepromInit()
 
   ret = i2cBegin(i2c_ch, 400);
 
-
   if (ret == true)
   {
     ret = eepromValid(0x00);
