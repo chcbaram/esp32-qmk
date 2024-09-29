@@ -4,23 +4,78 @@
 #ifdef _USE_HW_KEYS
 #include "qbuffer.h"
 #include "cli.h"
+#include "driver/gpio.h"
+#include "soc/io_mux_reg.h"
+
+#define KEYS_ROWS   MATRIX_ROWS
+#define KEYS_COLS   MATRIX_COLS
 
 
-
-static uint8_t cols_buf[MATRIX_COLS];
+#define lock()      xSemaphoreTake(mutex_lock, portMAX_DELAY);
+#define unLock()    xSemaphoreGive(mutex_lock);
 
 
 #if CLI_USE(HW_KEYS)
 static void cliCmd(cli_args_t *args);
 #endif
+static void keysThread(void *args);
 
+static uint8_t cols_buf[KEYS_COLS];
+static SemaphoreHandle_t mutex_lock;
+
+static gpio_num_t rows_gpio_tbl[KEYS_ROWS] = {GPIO_NUM_11,
+                                              GPIO_NUM_10,
+                                              GPIO_NUM_9,
+                                              GPIO_NUM_8};
+static gpio_num_t cols_gpio_tbl[KEYS_COLS] = {GPIO_NUM_18,
+                                              GPIO_NUM_21,
+                                              GPIO_NUM_26,
+                                              GPIO_NUM_47,
+                                              GPIO_NUM_33,
+                                              GPIO_NUM_34,
+                                              GPIO_NUM_48,
+                                              GPIO_NUM_38,
+                                              GPIO_NUM_39,
+                                              GPIO_NUM_3,
+                                              GPIO_NUM_4,
+                                              GPIO_NUM_6};
+
+
+static bool is_ready = false;
 
 
 
 
 bool keysInit(void)
 {
+  mutex_lock = xSemaphoreCreateMutex();
 
+
+  gpio_iomux_out(GPIO_NUM_26, FUNC_SPICS1_GPIO26, false);
+  gpio_iomux_out(GPIO_NUM_39, FUNC_MTCK_GPIO39, false);
+
+
+  for (int i=0; i<KEYS_ROWS; i++)
+  {
+    gpio_pullup_en(rows_gpio_tbl[i]);
+    gpio_pulldown_dis(rows_gpio_tbl[i]);
+    gpio_set_direction(rows_gpio_tbl[i], GPIO_MODE_INPUT);
+  }
+
+  for (int i=0; i<KEYS_COLS; i++)
+  {
+    gpio_pullup_dis(cols_gpio_tbl[i]);
+    gpio_pulldown_dis(cols_gpio_tbl[i]);
+    gpio_set_direction(cols_gpio_tbl[i], GPIO_MODE_OUTPUT);
+
+    gpio_set_level(cols_gpio_tbl[i], _DEF_HIGH);
+  }
+
+
+  if (xTaskCreate(keysThread, "keysThread", _HW_DEF_RTOS_THREAD_MEM_KEYS, NULL, _HW_DEF_RTOS_THREAD_PRI_KEYS, NULL) != pdPASS)
+  {
+    logPrintf("[NG] keysThread()\n");   
+  }  
 
 #if CLI_USE(HW_KEYS)
   cliAdd("keys", cliCmd);
@@ -34,6 +89,15 @@ bool keysIsBusy(void)
   return false;
 }
 
+bool keysIsReady(void)
+{
+  bool ret = is_ready;
+
+  is_ready = false;
+
+  return ret;
+}
+
 bool keysUpdate(void)
 {
   return true;
@@ -41,6 +105,9 @@ bool keysUpdate(void)
 
 bool keysReadBuf(uint8_t *p_data, uint32_t length)
 {
+  lock();
+  memcpy(p_data, cols_buf, length);
+  unLock();
   return true;
 }
 
@@ -59,6 +126,42 @@ bool keysGetPressed(uint16_t row, uint16_t col)
   return ret;
 }
 
+void keysScan(void)
+{
+  uint8_t scan_buf[KEYS_COLS];
+
+
+  memset(scan_buf, 0, sizeof(scan_buf));
+
+  for (int cols_i = 0; cols_i < KEYS_COLS; cols_i++)
+  {
+    gpio_set_level(cols_gpio_tbl[cols_i], _DEF_LOW);
+    esp_rom_delay_us(10);
+    for (int rows_i = 0; rows_i < KEYS_ROWS; rows_i++)
+    {
+      if (gpio_get_level(rows_gpio_tbl[rows_i]) == 0)
+      {
+        scan_buf[cols_i] |= (1<<rows_i);
+      }
+    }
+    gpio_set_level(cols_gpio_tbl[cols_i], _DEF_HIGH);
+  }
+
+  lock();
+  memcpy(cols_buf, scan_buf, sizeof(scan_buf));
+  unLock();
+
+  is_ready = true;
+}
+
+void keysThread(void *args)
+{
+  while(1)
+  {
+    keysScan();
+    delay(1);
+  }
+}
 
 #if CLI_USE(HW_KEYS)
 void cliCmd(cli_args_t *args)

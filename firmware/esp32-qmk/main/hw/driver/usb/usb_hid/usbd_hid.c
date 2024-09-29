@@ -6,6 +6,17 @@
 #define USB_VID                     0x0483
 #define USB_PID                     0x5300
 
+#define USB_HID_LOG                 1
+
+
+#if USB_HID_LOG == 0
+#define logDebug(...)                              \
+  {                                                \
+    logPrintf(__VA_ARGS__);                        \
+  }
+#else
+#define logDebug(...) 
+#endif
 
 #include "cli.h"
 #include "log.h"
@@ -201,11 +212,11 @@ void tud_hid_set_report_cb(uint8_t itf, uint8_t report_id, hid_report_type_t rep
   (void) report_id;
   (void) report_type;
 
-  logPrintf("tud_hid_set_report_cb()\n");
-  logPrintf("  itf         : %d\n", itf);
-  logPrintf("  report_id   : %d\n", report_id);
-  logPrintf("  report_type : %d\n", (int)report_type);
-  logPrintf("  reqlen      : %d\n", (int)bufsize);
+  logDebug("tud_hid_set_report_cb()\n");
+  logDebug("  itf         : %d\n", itf);
+  logDebug("  report_id   : %d\n", report_id);
+  logDebug("  report_type : %d\n", (int)report_type);
+  logDebug("  reqlen      : %d\n", (int)bufsize);
 
   switch(itf)
   {
@@ -245,33 +256,24 @@ bool usbHidSetViaReceiveFunc(void (*func)(uint8_t *, uint8_t))
 
 bool usbHidSendReport(uint8_t *p_data, uint16_t length)
 {
-  // report_info_t report_info;
+  bool ret = true;
 
-  // if (length > HID_KEYBOARD_REPORT_SIZE)
-  //   return false;
+  if (!tud_suspended())
+  {
+    if (tud_hid_n_ready(ITF_ID_KEYBOARD))
+    {
+      ret = tud_hid_n_report(ITF_ID_KEYBOARD, REPORT_ID_KEYBOARD, p_data, length);
+      if (!ret)
+      {
+        logPrintf("usbHidSendReport() Fail\n");
+      }
+    }
+    else
+    {
+      logPrintf("usbHidSendReport() Busy\n");
+    }
+  }
 
-  // if (!USBD_is_suspended())
-  // {
-  //   key_time_pre = micros();
-
-  //   memcpy(hid_buf, p_data, length);
-  //   if (USBD_HID_SendReport((uint8_t *)hid_buf, HID_KEYBOARD_REPORT_SIZE))
-  //   {
-  //     key_time_req = true;
-  //     rate_time_req = true;
-  //     rate_time_pre = micros();    
-  //   }  
-  //   else
-  //   {
-  //     memcpy(report_info.buf, p_data, length);
-  //     qbufferWrite(&report_q, (uint8_t *)&report_info, 1);        
-  //   }    
-  // }
-  // else
-  // {
-  //   usbHidUpdateWakeUp(&USBD_Device);
-  // }
-  
   return true;
 }
 

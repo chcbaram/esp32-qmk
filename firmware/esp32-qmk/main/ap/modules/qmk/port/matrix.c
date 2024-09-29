@@ -56,7 +56,6 @@ uint8_t matrix_scan(void)
 
   pre_time = micros();
 
-  #if 0
   uint8_t curr_cols[MATRIX_COLS];
   uint32_t row_data;
 
@@ -67,23 +66,13 @@ uint8_t matrix_scan(void)
     row_data = 0; 
     for (uint32_t cols=0; cols<MATRIX_COLS; cols++)
     {
-      if ((curr_cols[cols] & (1<<rows)) == 0x00)
+      if ((curr_cols[cols] & (1<<rows)))
       {
         row_data |= (1<<cols);
       }
     }
     curr_matrix[rows] = row_data;
   }
-  #else
-  keysUpdate();
-  for (uint32_t rows=0; rows<MATRIX_ROWS; rows++)
-  {
-    for (uint32_t cols=0; cols<MATRIX_COLS; cols++)
-    {
-      curr_matrix[rows] |= (keysGetPressed(rows, cols)<<cols);
-    }
-  }
-  #endif
 
   key_scan_time = micros() - pre_time;
 
@@ -95,10 +84,7 @@ uint8_t matrix_scan(void)
   }
 
   changed = debounce(raw_matrix, matrix, MATRIX_ROWS, changed);
-  if (changed)
-  {
-    // usbHidSetTimeLog(0, pre_time);
-  }
+
   matrix_info();
 
   return (uint8_t)changed;
