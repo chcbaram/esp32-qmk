@@ -27,6 +27,8 @@
 #define _USE_HW_USB
 #define _USE_HW_EEPROM
 #define _USE_HW_RESET
+#define _USE_HW_BLE
+#define _USE_HW_BLE_HID
 
 
 #define _USE_HW_UART

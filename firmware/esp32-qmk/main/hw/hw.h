@@ -12,13 +12,13 @@ extern "C" {
 #include "cli.h"
 #include "log.h"
 #include "nvs.h"
-#include "driver/usb/usb.h"
 #include "i2c.h"
 #include "eeprom.h"
 #include "reset.h"
 #include "qbuffer.h"
 #include "keys.h"
-
+#include "driver/usb/usb.h"
+#include "driver/ble/ble.h"
 
 bool hwInit(void);
 

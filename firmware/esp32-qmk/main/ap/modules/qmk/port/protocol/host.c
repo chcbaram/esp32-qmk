@@ -22,6 +22,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "util.h"
 #include "debug.h"
 #include "usb.h"
+#include "ble_hid.h"
 
 
 #ifdef DIGITIZER_ENABLE
@@ -84,7 +85,10 @@ void host_keyboard_send(report_keyboard_t *report)
   }
 #endif
 
-  usbHidSendReport((uint8_t *)report, sizeof(report_keyboard_t));
+  if (usbIsConnect())
+    usbHidSendReport((uint8_t *)report, sizeof(report_keyboard_t));
+  else
+    bleHidSendReport((uint8_t *)report, sizeof(report_keyboard_t));
 
   #ifdef DEBUG_KEY_SEND
   static uint32_t pre_time = 0;

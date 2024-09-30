@@ -39,7 +39,9 @@ idf_component_register(
   INCLUDE_DIRS "common/core"
   INCLUDE_DIRS "common/hw/include"
   INCLUDE_DIRS "hw"
+  INCLUDE_DIRS "hw/driver"
   INCLUDE_DIRS "hw/driver/usb"
+  INCLUDE_DIRS "hw/driver/ble"
   INCLUDE_DIRS "lib" 
 
   INCLUDE_DIRS ${QMK_INC_DIR}

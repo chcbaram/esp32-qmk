@@ -20,14 +20,17 @@ static void cliCmd(cli_args_t *args);
 
 bool usbInit(void)
 {
-  usbHidInit();
+  bool ret;
 
-  is_init = true;
+  ret = usbHidInit();
+  is_init = ret;
+
+  logPrintf("[%s] usbInit()\n", is_init?"OK":"E_");   
 
 #ifdef _USE_HW_CLI
   cliAdd("usb", cliCmd);
 #endif
-  return true;
+  return ret;
 }
 
 bool usbIsOpen(void)

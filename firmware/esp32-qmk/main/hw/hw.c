@@ -35,6 +35,7 @@ bool hwInit(void)
   keysInit();
   
   usbInit();
+  bleInit();
 
   return true;
 }

@@ -6,10 +6,10 @@
 #define USB_VID                     0x0483
 #define USB_PID                     0x5300
 
-#define USB_HID_LOG                 1
+#define USB_HID_LOG                 0
 
 
-#if USB_HID_LOG == 0
+#if USB_HID_LOG == 1
 #define logDebug(...)                              \
   {                                                \
     logPrintf(__VA_ARGS__);                        \
@@ -81,13 +81,13 @@ tusb_desc_device_t const desc_device =
 //--------------------------------------------------------------------+
 // HID Report Descriptor
 //--------------------------------------------------------------------+
-const uint8_t hid_keyboard_descriptor[] =
+static const uint8_t hid_keyboard_descriptor[] =
 {
   TUD_HID_REPORT_DESC_KEYBOARD(HID_REPORT_ID(REPORT_ID_KEYBOARD)),
   TUD_HID_REPORT_DESC_MOUSE(HID_REPORT_ID(REPORT_ID_MOUSE)),
 };
 
-const uint8_t hid_via_descriptor[HID_KEYBOARD_VIA_REPORT_DESC_SIZE] = 
+static const uint8_t hid_via_descriptor[HID_KEYBOARD_VIA_REPORT_DESC_SIZE] = 
 {
   //
   0x06, 0x60, 0xFF, // Usage Page (Vendor Defined)
@@ -175,6 +175,7 @@ bool usbHidInit(void)
     .self_powered             = false,
     .vbus_monitor_io          = -1,
   };
+  bool ret = true;
 
   qbufferCreateBySize(&report_q, (uint8_t *)report_buf, sizeof(report_info_t), 128); 
 
@@ -184,8 +185,9 @@ bool usbHidInit(void)
   if (xTaskCreate(hidThread, "hidThread", _HW_DEF_RTOS_THREAD_MEM_HID, NULL, _HW_DEF_RTOS_THREAD_PRI_HID, NULL) != pdPASS)
   {
     logPrintf("[NG] hidThread()\n");   
+    ret = false;
   }    
-  return true;
+  return ret;
 }
 
 uint8_t const *tud_hid_descriptor_report_cb(uint8_t itf)
@@ -216,11 +218,11 @@ uint16_t tud_hid_get_report_cb(uint8_t itf, uint8_t report_id, hid_report_type_t
   (void)buffer;
   (void)reqlen;
 
-  logPrintf("tud_hid_get_report_cb()\n");
-  logPrintf("  itf         : %d\n", itf);
-  logPrintf("  report_id   : %d\n", report_id);
-  logPrintf("  report_type : %d\n", (int)report_type);
-  logPrintf("  reqlen      : %d\n", (int)reqlen);
+  logDebug("tud_hid_get_report_cb()\n");
+  logDebug("  itf         : %d\n", itf);
+  logDebug("  report_id   : %d\n", report_id);
+  logDebug("  report_type : %d\n", (int)report_type);
+  logDebug("  reqlen      : %d\n", (int)reqlen);
 
   return 0;
 }
