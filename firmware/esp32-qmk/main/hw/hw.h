@@ -17,6 +17,8 @@ extern "C" {
 #include "reset.h"
 #include "qbuffer.h"
 #include "keys.h"
+#include "adc.h"
+#include "battery.h"
 #include "driver/usb/usb.h"
 #include "driver/ble/ble.h"
 

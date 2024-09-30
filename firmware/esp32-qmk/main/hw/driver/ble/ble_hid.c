@@ -18,6 +18,7 @@
 
 #include "cli.h"
 #include "tinyusb.h"
+#include "battery.h"
 
 #include "esp_bt.h"
 #include "esp_bt_defs.h"
@@ -44,45 +45,7 @@ typedef struct
 static void cliCmd(cli_args_t *args);
 #endif
 static void ble_hidd_event_callback(void *handler_args, esp_event_base_t base, int32_t id, void *event_data);
-
-#if 0
-static uint8_t hid_keyboard_descriptor[] =
-{
-  0x05, 0x01,                         // USAGE_PAGE (Generic Desktop)
-  0x09, 0x06,                         // USAGE (Keyboard)
-  0xa1, 0x01,                         // COLLECTION (Application)
-  0x05, 0x07,                         //   USAGE_PAGE (Keyboard)
-  0x19, 0xe0,                         //   USAGE_MINIMUM (Keyboard LeftControl)
-  0x29, 0xe7,                         //   USAGE_MAXIMUM (Keyboard Right GUI)
-  0x15, 0x00,                         //   LOGICAL_MINIMUM (0)
-  0x25, 0x01,                         //   LOGICAL_MAXIMUM (1)
-  0x75, 0x01,                         //   REPORT_SIZE (1)
-  0x95, 0x08,                         //   REPORT_COUNT (8)
-  0x81, 0x02,                         //   INPUT (Data,Var,Abs)
-  0x95, 0x01,                         //   REPORT_COUNT (1)
-  0x75, 0x08,                         //   REPORT_SIZE (8)
-  0x81, 0x03,                         //   INPUT (Cnst,Var,Abs)
-  0x95, 0x05,                         //   REPORT_COUNT (5)
-  0x75, 0x01,                         //   REPORT_SIZE (1)
-  0x05, 0x08,                         //   USAGE_PAGE (LEDs)
-  0x19, 0x01,                         //   USAGE_MINIMUM (Num Lock)
-  0x29, 0x05,                         //   USAGE_MAXIMUM (Kana)
-  0x91, 0x02,                         //   OUTPUT (Data,Var,Abs)
-  0x95, 0x01,                         //   REPORT_COUNT (1)
-  0x75, 0x03,                         //   REPORT_SIZE (3)
-  0x91, 0x03,                         //   OUTPUT (Cnst,Var,Abs)
-  0x95, HW_KEYS_PRESS_MAX,            //   REPORT_COUNT (6)
-  0x75, 0x08,                         //   REPORT_SIZE (8)
-  0x15, 0x00,                         //   LOGICAL_MINIMUM (0)
-  0x26, 0xFF, 0x00,                   //   LOGICAL_MAXIMUM (255)
-  0x05, 0x07,                         //   USAGE_PAGE (Keyboard)
-  0x19, 0x00,                         //   USAGE_MINIMUM (Reserved (no event indicated))
-  0x29, 0xFF,                         //   USAGE_MAXIMUM (Keyboard Application)
-  0x81, 0x00,                         //   INPUT (Data,Ary,Abs)
-  0xc0                                // END_COLLECTION
-};
-
-#else
+static void bleHidThread(void *args);
 
 const unsigned char hid_keyboard_descriptor[] = {
     0x05, 0x01,        // Usage Page (Generic Desktop Ctrls)
@@ -121,7 +84,6 @@ const unsigned char hid_keyboard_descriptor[] = {
 
     // 65 bytes
 };
-#endif
 
 static esp_hid_raw_report_map_t ble_report_maps[] = {
   {.data = hid_keyboard_descriptor,
@@ -182,6 +144,12 @@ bool bleHidInit(void)
     logPrintf("[E_] esp_hidd_dev_init()\n");
     return false;
   }
+
+  if (xTaskCreate(bleHidThread, "bleHidThread", _HW_DEF_RTOS_THREAD_MEM_HID, NULL, _HW_DEF_RTOS_THREAD_PRI_HID, NULL) != pdPASS)
+  {
+    logPrintf("[NG] bleHidThread()\n");   
+    ret = false;
+  }    
 
 #ifdef _USE_HW_CLI
   cliAdd("blehid", cliCmd);
@@ -287,6 +255,33 @@ void ble_hidd_event_callback(void *handler_args, esp_event_base_t base, int32_t 
       break;
   }
   return;
+}
+
+void bleHidThread(void *args)
+{
+  uint32_t pre_time;  
+  uint8_t bat_level = 0;
+
+  pre_time = millis();
+  while(1)
+  {
+    if (millis()-pre_time >= 500)
+    {
+      pre_time = millis();
+      if (is_connected)
+      {
+        uint8_t cur_level;
+
+        cur_level = batteryGetPercent();
+        if (cur_level != bat_level)
+        {
+          bat_level = cur_level;
+          esp_hidd_dev_battery_set(ble_hid_param.hid_dev, bat_level);
+        }
+      }
+    }
+    delay(1);
+  }
 }
 
 #ifdef _USE_HW_CLI

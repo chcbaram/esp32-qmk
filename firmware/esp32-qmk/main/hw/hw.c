@@ -30,6 +30,8 @@ bool hwInit(void)
   logPrintf("Free heap : %ld KB\n", esp_get_free_heap_size()/1024);
   logPrintf("Free Heapi: %d KB\n", esp_get_free_internal_heap_size()/1024);
 
+  adcInit();
+  batteryInit();
   i2cInit();
   eepromInit();
   keysInit();

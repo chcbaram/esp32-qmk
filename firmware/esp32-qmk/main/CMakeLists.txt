@@ -14,7 +14,8 @@ file(GLOB_RECURSE SRC_FILES_RECURSE
 )
 
 set(requires 
-  "spi_flash" 
+  "spi_flash"
+  "esp_adc"
   "esp_timer"
   "esp_psram"
   "vfs"

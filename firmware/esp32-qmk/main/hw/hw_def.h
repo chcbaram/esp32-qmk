@@ -15,11 +15,13 @@
 #define _HW_DEF_RTOS_THREAD_PRI_QMK           5
 #define _HW_DEF_RTOS_THREAD_PRI_KEYS          5
 #define _HW_DEF_RTOS_THREAD_PRI_HID           5
+#define _HW_DEF_RTOS_THREAD_PRI_BATTERY       5
 
 #define _HW_DEF_RTOS_THREAD_MEM_CLI           (8*1024)
 #define _HW_DEF_RTOS_THREAD_MEM_QMK           (8*1024)
 #define _HW_DEF_RTOS_THREAD_MEM_KEYS          (4*1024)
 #define _HW_DEF_RTOS_THREAD_MEM_HID           (2*1024)
+#define _HW_DEF_RTOS_THREAD_MEM_BATTERY       (1*1024)
 
 
 #define _USE_HW_RTOS
@@ -29,6 +31,7 @@
 #define _USE_HW_RESET
 #define _USE_HW_BLE
 #define _USE_HW_BLE_HID
+#define _USE_HW_BATTERY
 
 
 #define _USE_HW_UART
@@ -58,6 +61,9 @@
 
 #define _USE_HW_GPIO
 #define      HW_GPIO_MAX_CH         4
+
+#define _USE_HW_ADC                 
+#define      HW_ADC_MAX_CH          1
 
 
 //-- CLI

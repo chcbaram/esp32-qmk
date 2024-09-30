@@ -1,12 +1,5 @@
-/*
- * battery.h
- *
- *  Created on: 2022. 9. 18.
- *      Author: Baram
- */
-
-#ifndef SRC_COMMON_HW_INCLUDE_BATTERY_H_
-#define SRC_COMMON_HW_INCLUDE_BATTERY_H_
+#ifndef BATTERY_H_
+#define BATTERY_H_
 
 
 #ifdef __cplusplus
