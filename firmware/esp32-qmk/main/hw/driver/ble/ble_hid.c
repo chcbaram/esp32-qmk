@@ -92,9 +92,9 @@ static esp_hid_raw_report_map_t ble_report_maps[] = {
 
 static esp_hid_device_config_t ble_hid_config = {
     .vendor_id          = USB_VID,
-    .product_id         = USB_PID,
+    .product_id         = USB_PID+1,
     .version            = 0x0100,
-    .device_name        = KBD_NAME,
+    .device_name        = KBD_NAME "-BLE",
     .manufacturer_name  = "BARAM",
     .serial_number      = "1234567890",
     .report_maps        = ble_report_maps,
@@ -262,6 +262,7 @@ void bleHidThread(void *args)
   uint32_t pre_time;  
   uint8_t bat_level = 0;
 
+
   pre_time = millis();
   while(1)
   {
@@ -270,14 +271,8 @@ void bleHidThread(void *args)
       pre_time = millis();
       if (is_connected)
       {
-        uint8_t cur_level;
-
-        cur_level = batteryGetPercent();
-        if (cur_level != bat_level)
-        {
-          bat_level = cur_level;
-          esp_hidd_dev_battery_set(ble_hid_param.hid_dev, bat_level);
-        }
+        bat_level = batteryGetPercent();
+        esp_hidd_dev_battery_set(ble_hid_param.hid_dev, bat_level);
       }
     }
     delay(1);

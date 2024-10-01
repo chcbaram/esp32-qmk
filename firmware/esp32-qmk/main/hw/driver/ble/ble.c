@@ -12,6 +12,7 @@ bool bleInit(void)
 {
   bool ret;
 
+  logPrintf("[  ] bleInit()\n");   
 
   ret = bleHidInit();
   is_init = ret;
