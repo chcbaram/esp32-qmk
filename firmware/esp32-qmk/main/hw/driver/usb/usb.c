@@ -22,6 +22,9 @@ bool usbInit(void)
 {
   bool ret;
 
+
+  logPrintf("[  ] usbInit()\n");   
+
   ret = usbHidInit();
   is_init = ret;
 

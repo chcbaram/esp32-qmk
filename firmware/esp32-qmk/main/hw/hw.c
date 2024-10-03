@@ -36,8 +36,12 @@ bool hwInit(void)
   eepromInit();
   keysInit();
   
+  delay(100);
   usbInit();
+  
+  delay(100);
   bleInit();
+
 
   return true;
 }

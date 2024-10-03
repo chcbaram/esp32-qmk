@@ -134,6 +134,13 @@ bool uartFlush(uint8_t ch)
     uartRead(ch);
   }
 
+  switch(ch)
+  {
+     case _DEF_UART1:    
+      uart_flush(uart_tbl[ch].port);
+      break;
+  }
+
   return true;
 }
 

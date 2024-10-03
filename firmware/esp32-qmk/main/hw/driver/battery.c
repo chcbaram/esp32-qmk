@@ -7,6 +7,8 @@
 
 
 #define BAT_ADC_MAX_COUNT     10
+#define BAT_ADC_TO_VOL(x)     ((float)x * 3.3f * 2.0f / 4095.f)
+
 
 #define lock()      xSemaphoreTake(mutex_lock, portMAX_DELAY);
 #define unLock()    xSemaphoreGive(mutex_lock);
@@ -41,23 +43,30 @@ static uint16_t buf_index = 0;
 
 bool batteryInit(void)
 {
-  bool ret = true;
+  bool    ret = true;
+  int32_t adc_sum;
+  int32_t adc_avg;
 
-  
   mutex_lock = xSemaphoreCreateMutex();
 
+  adc_sum = 0;
   for (int i=0; i<BAT_ADC_MAX_COUNT; i++)
   {
     adc_data[i] = adcRead12(adc_ch);
+    adc_sum += adc_data[i];
   }
+  adc_avg = adc_sum / BAT_ADC_MAX_COUNT;
 
   if (xTaskCreate(batteryThread, "batteryThread", _HW_DEF_RTOS_THREAD_MEM_BATTERY, NULL, _HW_DEF_RTOS_THREAD_PRI_BATTERY, NULL) != pdPASS)
   {
     logPrintf("[NG] batteryThread()\n");   
+    ret = false;
   }
 
-  is_init = true;
+  is_init = ret;
 
+  logPrintf("[%s] batteryInit()\n", is_init ? "OK":"E_");
+  logPrintf("     %3.2f V\n", BAT_ADC_TO_VOL(adc_avg));
 
 #ifdef _USE_HW_CLI
   cliAdd("battery", cliBattery);
@@ -120,7 +129,7 @@ void batteryThread(void *args)
       sum += adc_data[i];
     }
     adc_value = sum/BAT_ADC_MAX_COUNT;
-    bat_vol = (float)adc_value * 3.3f * 2.0f / 4095.f; 
+    bat_vol = BAT_ADC_TO_VOL(adc_value); 
     adc_vol = constrain(bat_vol, bat_min, bat_max);
 
     percent = (int32_t)cmap(adc_vol, bat_min, bat_max, 0, 100);
