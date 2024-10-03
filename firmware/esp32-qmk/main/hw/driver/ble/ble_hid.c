@@ -107,7 +107,7 @@ static esp_hid_device_config_t ble_hid_config = {
 
 static ble_hid_param_t ble_hid_param = {0};
 static bool is_connected = false;
-
+static bool is_sleep = false;
 
 
 
@@ -256,7 +256,11 @@ void ble_hidd_event_callback(void *handler_args, esp_event_base_t base, int32_t 
         // ble_hid_task_shut_down();
         is_connected = false;
         logPrintf("ble_hid_task_shut_down()\n");
-        esp_hid_ble_gap_adv_start();
+
+        if (!is_sleep)
+        {
+          esp_hid_ble_gap_adv_start();
+        }
         break;
       }
     case ESP_HIDD_STOP_EVENT:
@@ -293,6 +297,8 @@ void bleHidThread(void *args)
     delay(1);
   }
 }
+extern esp_bd_addr_t remote_device;
+extern esp_err_t esp_hid_ble_gap_adv_start2(void);
 
 #ifdef _USE_HW_CLI
 void cliCmd(cli_args_t *args)
@@ -318,24 +324,18 @@ void cliCmd(cli_args_t *args)
 
   if (args->argc == 1 && args->isStr(0, "sleep") == true)
   {
-    // esp_sleep_disable_wakeup_source(ESP_SLEEP_WAKEUP_ALL);
-
-    // gpio_config_t config = {
-    //   .pin_bit_mask = BIT64(GPIO_NUM_18),
-    //   .mode         = GPIO_MODE_INPUT,
-    //   .pull_down_en = true,
-    //   .pull_up_en   = false,
-    //   .intr_type    = GPIO_INTR_DISABLE};
-    // gpio_config(&config);
-
-    // gpio_wakeup_enable(GPIO_NUM_18, GPIO_INTR_HIGH_LEVEL);
-    // esp_sleep_enable_gpio_wakeup();
-
     keysEnterSleep();
+
+    is_sleep = true;
+    esp_ble_gap_disconnect(remote_device);
+    delay(100);
     esp_light_sleep_start();
     cliPrintf("Wake Up\n");
-    
+
+    is_sleep = false;
     keysExitSleep();
+    esp_hid_ble_gap_adv_start();
+
     ret = true;
   }
 
@@ -344,6 +344,7 @@ void cliCmd(cli_args_t *args)
     cliPrintf("blehid info\n");
     cliPrintf("blehid send\n");
     cliPrintf("blehid sleep\n");  
+    cliPrintf("blehid exit\n");  
   }
 }
 #endif

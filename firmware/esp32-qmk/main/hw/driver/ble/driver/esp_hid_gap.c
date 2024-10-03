@@ -458,7 +458,7 @@ static esp_err_t start_bt_scan(uint32_t seconds)
 /*
  * BLE GAP
  * */
-
+esp_bd_addr_t remote_device;
 static void ble_gap_event_handler(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *param)
 {
     switch (event) {
@@ -495,11 +495,12 @@ static void ble_gap_event_handler(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_p
      * ADVERTISEMENT
      * */
     case ESP_GAP_BLE_ADV_DATA_SET_COMPLETE_EVT:
-        ESP_LOGV(TAG, "BLE GAP ADV_DATA_SET_COMPLETE");
+        ESP_LOGI(TAG, "BLE GAP ADV_DATA_SET_COMPLETE");
         break;
 
     case ESP_GAP_BLE_ADV_START_COMPLETE_EVT:
-        ESP_LOGV(TAG, "BLE GAP ADV_START_COMPLETE");
+        ESP_LOGI(TAG, "BLE GAP ADV_START_COMPLETE");
+        ESP_LOGI(TAG, "param %X\n", param->ble_security.key_notif.bd_addr);
         break;
 
     /*
@@ -510,6 +511,7 @@ static void ble_gap_event_handler(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_p
             ESP_LOGE(TAG, "BLE GAP AUTH ERROR: 0x%x", param->ble_security.auth_cmpl.fail_reason);
         } else {
             ESP_LOGI(TAG, "BLE GAP AUTH SUCCESS");
+            memcpy(remote_device, param->ble_security.auth_cmpl.bd_addr, sizeof(esp_bd_addr_t));
         }
         break;
 
@@ -545,7 +547,7 @@ static void ble_gap_event_handler(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_p
         break;
 
     default:
-        ESP_LOGV(TAG, "BLE GAP EVENT %s", ble_gap_evt_str(event));
+        ESP_LOGI(TAG, "BLE GAP EVENT %s", ble_gap_evt_str(event));
         break;
     }
 }
@@ -669,14 +671,14 @@ esp_err_t esp_hid_ble_gap_adv_start(void)
     static esp_ble_adv_params_t hidd_adv_params = {
         .adv_int_min        = 0x20,
         .adv_int_max        = 0x30,
-        .adv_type           = ADV_TYPE_IND,
+        .adv_type           = ADV_TYPE_IND,       
         .own_addr_type      = BLE_ADDR_TYPE_PUBLIC,
         .channel_map        = ADV_CHNL_ALL,
         .adv_filter_policy  = ADV_FILTER_ALLOW_SCAN_ANY_CON_ANY,
     };
     return esp_ble_gap_start_advertising(&hidd_adv_params);
 }
-#endif /* CONFIG_BT_BLE_ENABLED */
+#endif /* CONFIG_BT_BLE_ENABLED /*
 
 /*
  * CONTROLLER INIT
