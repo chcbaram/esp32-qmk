@@ -319,24 +319,19 @@ void cliCmd(cli_args_t *args)
   {
     esp_sleep_disable_wakeup_source(ESP_SLEEP_WAKEUP_ALL);
 
-    /* Enable wake up from GPIO */
-    rtc_gpio_init(GPIO_NUM_18);
-    rtc_gpio_set_direction(GPIO_NUM_18, RTC_GPIO_MODE_OUTPUT_OD);
-    rtc_gpio_pulldown_dis(GPIO_NUM_18);
-    rtc_gpio_pullup_dis(GPIO_NUM_18);
-    rtc_gpio_set_level(GPIO_NUM_18, _DEF_LOW);
+    gpio_config_t config = {
+      .pin_bit_mask = BIT64(GPIO_NUM_18),
+      .mode         = GPIO_MODE_INPUT,
+      .pull_down_en = true,
+      .pull_up_en   = false,
+      .intr_type    = GPIO_INTR_DISABLE};
+    gpio_config(&config);
 
-    gpio_wakeup_enable(GPIO_NUM_11, GPIO_INTR_LOW_LEVEL);
+    gpio_wakeup_enable(GPIO_NUM_18, GPIO_INTR_HIGH_LEVEL);
     esp_sleep_enable_gpio_wakeup();
-    delay(100);
     esp_light_sleep_start();
-    rtc_gpio_deinit(GPIO_NUM_18);
+    cliPrintf("Wake Up\n");
 
-    while(cliKeepLoop())
-    {
-      cliPrintf("%d\n", gpio_get_level(GPIO_NUM_11));
-      delay(100);
-    }
     ret = true;
   }
 
