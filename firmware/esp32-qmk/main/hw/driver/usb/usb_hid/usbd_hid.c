@@ -158,8 +158,11 @@ static qbuffer_t     report_q;
 static report_info_t report_buf[128];
 
 
-
+#ifdef _USE_HW_CLI
+static void cliCmd(cli_args_t *args);
+#endif
 static void hidThread(void *args);
+
 
 
 
@@ -187,6 +190,10 @@ bool usbHidInit(void)
     logPrintf("[NG] hidThread()\n");   
     ret = false;
   }    
+
+#ifdef _USE_HW_CLI
+  cliAdd("usbhid", cliCmd);
+#endif  
   return ret;
 }
 

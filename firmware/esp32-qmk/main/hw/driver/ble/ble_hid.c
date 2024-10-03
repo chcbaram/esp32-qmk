@@ -27,9 +27,11 @@
 #include "esp_gatt_defs.h"
 #include "esp_bt_main.h"
 #include "esp_bt_device.h"
-
+#include "esp_sleep.h"
 #include "esp_hidd.h"
 #include "driver/esp_hid_gap.h"
+#include "driver/gpio.h"
+#include "driver/rtc_io.h"
 
 
 typedef struct
@@ -113,7 +115,7 @@ bool bleHidInit(void)
 {
   bool ret = true;
  
- 
+
   if (xTaskCreate(bleHidThread, "bleHidThread", _HW_DEF_RTOS_THREAD_MEM_HID, NULL, _HW_DEF_RTOS_THREAD_PRI_HID, NULL) != pdPASS)
   {
     logPrintf("[NG] bleHidThread()\n");   
@@ -313,10 +315,36 @@ void cliCmd(cli_args_t *args)
     ret = true;
   }
 
+  if (args->argc == 1 && args->isStr(0, "sleep") == true)
+  {
+    esp_sleep_disable_wakeup_source(ESP_SLEEP_WAKEUP_ALL);
+
+    /* Enable wake up from GPIO */
+    rtc_gpio_init(GPIO_NUM_18);
+    rtc_gpio_set_direction(GPIO_NUM_18, RTC_GPIO_MODE_OUTPUT_OD);
+    rtc_gpio_pulldown_dis(GPIO_NUM_18);
+    rtc_gpio_pullup_dis(GPIO_NUM_18);
+    rtc_gpio_set_level(GPIO_NUM_18, _DEF_LOW);
+
+    gpio_wakeup_enable(GPIO_NUM_11, GPIO_INTR_LOW_LEVEL);
+    esp_sleep_enable_gpio_wakeup();
+    delay(100);
+    esp_light_sleep_start();
+    rtc_gpio_deinit(GPIO_NUM_18);
+
+    while(cliKeepLoop())
+    {
+      cliPrintf("%d\n", gpio_get_level(GPIO_NUM_11));
+      delay(100);
+    }
+    ret = true;
+  }
+
   if (ret == false)
   {
     cliPrintf("blehid info\n");
     cliPrintf("blehid send\n");
+    cliPrintf("blehid sleep\n");  
   }
 }
 #endif
