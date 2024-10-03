@@ -46,6 +46,7 @@ static void cliCmd(cli_args_t *args);
 #endif
 static void ble_hidd_event_callback(void *handler_args, esp_event_base_t base, int32_t id, void *event_data);
 static void bleHidThread(void *args);
+static bool bleHidSetup(void);
 
 const unsigned char hid_keyboard_descriptor[] = {
     0x05, 0x01,        // Usage Page (Generic Desktop Ctrls)
@@ -111,7 +112,25 @@ static bool is_connected = false;
 bool bleHidInit(void)
 {
   bool ret = true;
+ 
+ 
+  if (xTaskCreate(bleHidThread, "bleHidThread", _HW_DEF_RTOS_THREAD_MEM_HID, NULL, _HW_DEF_RTOS_THREAD_PRI_HID, NULL) != pdPASS)
+  {
+    logPrintf("[NG] bleHidThread()\n");   
+    ret = false;
+  }   
+
+#ifdef _USE_HW_CLI
+  cliAdd("blehid", cliCmd);
+#endif
+  return ret;
+}
+
+bool bleHidSetup(void)
+{
+  bool ret = true;
   esp_err_t esp_ret;
+
 
   logPrintf("[  ] esp_hid_gap_init()\n");
   esp_ret = esp_hid_gap_init(HID_DEV_MODE);
@@ -145,15 +164,6 @@ bool bleHidInit(void)
     return false;
   }
 
-  if (xTaskCreate(bleHidThread, "bleHidThread", _HW_DEF_RTOS_THREAD_MEM_HID, NULL, _HW_DEF_RTOS_THREAD_PRI_HID, NULL) != pdPASS)
-  {
-    logPrintf("[NG] bleHidThread()\n");   
-    ret = false;
-  }    
-
-#ifdef _USE_HW_CLI
-  cliAdd("blehid", cliCmd);
-#endif
   return ret;
 }
 
@@ -262,6 +272,8 @@ void bleHidThread(void *args)
   uint32_t pre_time;  
   uint8_t bat_level = 0;
 
+
+  bleHidSetup();
 
   pre_time = millis();
   while(1)
