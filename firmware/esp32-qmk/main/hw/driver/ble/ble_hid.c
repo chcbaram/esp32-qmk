@@ -19,6 +19,7 @@
 #include "cli.h"
 #include "tinyusb.h"
 #include "battery.h"
+#include "keys.h"
 
 #include "esp_bt.h"
 #include "esp_bt_defs.h"
@@ -317,21 +318,24 @@ void cliCmd(cli_args_t *args)
 
   if (args->argc == 1 && args->isStr(0, "sleep") == true)
   {
-    esp_sleep_disable_wakeup_source(ESP_SLEEP_WAKEUP_ALL);
+    // esp_sleep_disable_wakeup_source(ESP_SLEEP_WAKEUP_ALL);
 
-    gpio_config_t config = {
-      .pin_bit_mask = BIT64(GPIO_NUM_18),
-      .mode         = GPIO_MODE_INPUT,
-      .pull_down_en = true,
-      .pull_up_en   = false,
-      .intr_type    = GPIO_INTR_DISABLE};
-    gpio_config(&config);
+    // gpio_config_t config = {
+    //   .pin_bit_mask = BIT64(GPIO_NUM_18),
+    //   .mode         = GPIO_MODE_INPUT,
+    //   .pull_down_en = true,
+    //   .pull_up_en   = false,
+    //   .intr_type    = GPIO_INTR_DISABLE};
+    // gpio_config(&config);
 
-    gpio_wakeup_enable(GPIO_NUM_18, GPIO_INTR_HIGH_LEVEL);
-    esp_sleep_enable_gpio_wakeup();
+    // gpio_wakeup_enable(GPIO_NUM_18, GPIO_INTR_HIGH_LEVEL);
+    // esp_sleep_enable_gpio_wakeup();
+
+    keysEnterSleep();
     esp_light_sleep_start();
     cliPrintf("Wake Up\n");
-
+    
+    keysExitSleep();
     ret = true;
   }
 
