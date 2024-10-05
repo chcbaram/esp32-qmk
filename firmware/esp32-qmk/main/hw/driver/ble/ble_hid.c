@@ -191,6 +191,10 @@ bool bleHidSendReport(uint8_t *p_data, uint16_t length)
       logPrintf("esp_hidd_dev_input_set() Fail\n");
     }
   }
+  else
+  {
+    // logPrintf("key in disconnected\n");
+  }
   return ret;
 }
 
@@ -240,7 +244,7 @@ void ble_hidd_event_callback(void *handler_args, esp_event_base_t base, int32_t 
       }
     case ESP_HIDD_OUTPUT_EVENT:
       {
-        logDebug("OUTPUT[%u]: %8s ID: %2u, Len: %d, Data:\n", param->output.map_index, esp_hid_usage_str(param->output.usage), param->output.report_id, param->output.length);
+        // logDebug("OUTPUT[%u]: %8s ID: %2u, Len: %d, Data:\n", param->output.map_index, esp_hid_usage_str(param->output.usage), param->output.report_id, param->output.length);
         // ESP_LOG_BUFFER_HEX(TAG, param->output.data, param->output.length);
         break;
       }
@@ -269,6 +273,7 @@ void ble_hidd_event_callback(void *handler_args, esp_event_base_t base, int32_t 
         break;
       }
     default:
+      logDebug("EVENT %d\n", event);
       break;
   }
   return;
@@ -343,8 +348,7 @@ void cliCmd(cli_args_t *args)
   {
     cliPrintf("blehid info\n");
     cliPrintf("blehid send\n");
-    cliPrintf("blehid sleep\n");  
-    cliPrintf("blehid exit\n");  
+    cliPrintf("blehid sleep\n");    
   }
 }
 #endif
