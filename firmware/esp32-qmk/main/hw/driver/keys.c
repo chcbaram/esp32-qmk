@@ -181,7 +181,7 @@ void keysScan(void)
 
   memset(scan_buf, 0, sizeof(scan_buf));
 
-  lockGpio();
+  // lockGpio();
   for (int cols_i = 0; cols_i < KEYS_COLS; cols_i++)
   {
     gpio_set_level(cols_gpio_tbl[cols_i], _DEF_LOW);
@@ -195,7 +195,7 @@ void keysScan(void)
     }
     gpio_set_level(cols_gpio_tbl[cols_i], _DEF_HIGH);
   }
-  unLockGpio();
+  // unLockGpio();
 
   lock();
   memcpy(cols_buf, scan_buf, sizeof(scan_buf));
