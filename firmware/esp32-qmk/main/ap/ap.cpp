@@ -35,7 +35,7 @@ void apMain(void)
 
       index++;
     }
-    delay(1);
+    delay(1000);
   }
 }
 

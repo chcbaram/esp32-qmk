@@ -678,7 +678,7 @@ esp_err_t esp_hid_ble_gap_adv_start(void)
     };
     return esp_ble_gap_start_advertising(&hidd_adv_params);
 }
-#endif /* CONFIG_BT_BLE_ENABLED /*
+#endif /* CONFIG_BT_BLE_ENABLED */
 
 /*
  * CONTROLLER INIT

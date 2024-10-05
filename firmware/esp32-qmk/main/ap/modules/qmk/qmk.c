@@ -6,6 +6,7 @@
 static void cliQmk(cli_args_t *args);
 static void idle_task(void);
 static void qmkThread(void *args);
+static void usbThread(void *args);
 
 static bool is_suspended = false;
 
@@ -33,9 +34,14 @@ bool qmkInit(void)
     logPrintf("[NG] qmkThread()\n");   
   }  
 
+  if (xTaskCreate(usbThread, "usbThread", _HW_DEF_RTOS_THREAD_MEM_USB, NULL, _HW_DEF_RTOS_THREAD_PRI_USB, NULL) != pdPASS)
+  {
+    logPrintf("[NG] qmkThread()\n");   
+  }  
+
   cliAdd("qmk", cliQmk);
 
-  tud_task();
+
 
   return true;
 }
@@ -52,6 +58,15 @@ void qmkThread(void *args)
   while(1)
   {
     qmkUpdate();
+    delay(1);
+  }
+}
+
+void usbThread(void *args)
+{
+  while(1)
+  {
+    tud_task();
     delay(1);
   }
 }
